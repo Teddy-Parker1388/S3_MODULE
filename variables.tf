@@ -1,16 +1,31 @@
 #################################################################
 # S3 BUCKET
 #################################################################
-variable "buckets_to_create" {
+
+variable "create_s3_bucket" {
+  description = "Whether to create s3 bucket"
+  type = bool
+  default = true 
+}
+
+
+variable "bucket_to_create" {
     description = "A map of objects containing information for the provisioning of S3 Bucket(s)"
 
-    type = map(object({
-
+    type = object({
+        bucket = string
         bucket_prefix = any
         force_destroy = bool
         object_lock_enabled = bool
         
-    }))
+    })
+
+    default = {
+      bucket = "teddy"
+      bucket_prefix = "myprefix"
+      force_destroy = false
+      object_lock_enabled = false
+    }
 
 }
 
@@ -73,7 +88,7 @@ variable "create_ownership_controls"{
 variable "create_bucket_acl"{
     description = "Determines whether to create bucket ownership controls for your created s3 buckets"
     type = bool
-    default = false
+    default = true
 
 }
 
@@ -298,7 +313,7 @@ variable "intelligent_tiering_config_tiering" {
 variable "create_lifecycle_configuration" {
     description = "Specifies whether to create bucket lifecycle configuration"
     type = bool
-    default = true
+    default = false
 }
 
 variable "lifecycle_rules_transition" {
@@ -318,11 +333,13 @@ variable "lifecycle_configuration" {
         id = string
         status = string
         expiration_days = number 
+        expiration_date = any
     })
 
     default = {
       expiration_days = null
       id = " "
+      expiration_date = null
       status = "Enabled"
     }
 }
@@ -413,5 +430,22 @@ variable "redirect_http_code" {
 variable "redirect_replace_key_with" {
   description = "Conflicts with replace_key_prefix_with. Specific object key to use in the redirect request. For example, redirect request to error.html"
   type = string
+  default = null
+}
+
+#################################################################
+# ALL
+#################################################################
+
+variable "provide_bucket_id" {
+  description = "Whether to provide bucket id in root module as value for `bucket` in all resources except aws_s3_bucket"
+  type = bool
+  default = false
+
+}
+
+variable "bucket_id"{
+  description = "Bucket id to be used as value for `bucekt` argument. eg aws_s3_bucket.example_bucket.id"
+  type = any
   default = null
 }
