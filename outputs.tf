@@ -1,9 +1,9 @@
-output "bucket_ids"{
+output "bucket_id"{
   description = "Name of bucket"
   value =  try(aws_s3_bucket.app_s3_bucket[0].id,null)
 }
 
-output "bucket_arns"{
+output "bucket_arn"{
   description = "ARN of the bucket"
   value = try(aws_s3_bucket.app_s3_bucket[0].arn,null)
 }
