@@ -478,7 +478,7 @@ variable "create_iam_policy" {
 
 variable "s3_iam_policy_statement" {
   description = "IAM Poliicy statement"
-  type        = map(string)
+  type        = any
   default     = {}
 
 }
