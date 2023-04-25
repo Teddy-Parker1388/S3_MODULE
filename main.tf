@@ -1,25 +1,25 @@
-
-provider "aws"{
+provider "aws" {
   profile = "personal"
 }
 
-
-locals{
-  bucket_name = aws_s3_bucket.app_s3_bucket[0].id
+locals {
+  bucket_name             = aws_s3_bucket.app_s3_bucket[0].id
+  s3_iam_policy_statement = jsonencode(var.s3_iam_policy_statement)
+  s3_iam_role_policy      = jsonencode(var.s3_iam_role_policy)
 }
 #################################################################
 # CREATE S3 BUCKET
 #################################################################
 resource "aws_s3_bucket" "app_s3_bucket" {
-    
-    count = var.create_s3_bucket ? 1 : 0 
 
-    bucket = var.bucket_to_create.bucket_prefix!= null ? null : var.bucket_to_create.bucket
-    bucket_prefix = var.bucket_to_create.bucket_prefix
-    force_destroy = var.bucket_to_create.force_destroy
-    object_lock_enabled = var.bucket_to_create.object_lock_enabled
+  count = var.create_s3_bucket ? 1 : 0
 
-    tags                = var.tags
+  bucket              = var.bucket_to_create.bucket_prefix != null ? null : var.bucket_to_create.bucket
+  bucket_prefix       = var.bucket_to_create.bucket_prefix
+  force_destroy       = var.bucket_to_create.force_destroy
+  object_lock_enabled = var.bucket_to_create.object_lock_enabled
+
+  tags = var.tags
 }
 
 
@@ -28,10 +28,10 @@ resource "aws_s3_bucket" "app_s3_bucket" {
 #################################################################
 
 resource "aws_s3_bucket_logging" "app_s3_log" {
-    count = var.create_bucket_logging ? 1 : 0
-    bucket =  var.provide_bucket_id ? var.bucket_id : local.bucket_name
-    target_bucket = var.target_bucket
-    target_prefix = var.target_prefix
+  count         = var.create_bucket_logging ? 1 : 0
+  bucket        = var.provide_bucket_id ? var.bucket_id : local.bucket_name
+  target_bucket = var.target_bucket
+  target_prefix = var.target_prefix
 }
 
 
@@ -40,7 +40,7 @@ resource "aws_s3_bucket_logging" "app_s3_log" {
 #################################################################
 
 resource "aws_s3_bucket_ownership_controls" "app_s3_controls" {
-  count = var.create_ownership_controls ? 1 : 0
+  count  = var.create_ownership_controls ? 1 : 0
   bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
 
   rule {
@@ -55,12 +55,12 @@ resource "aws_s3_bucket_ownership_controls" "app_s3_controls" {
 
 resource "aws_s3_bucket_acl" "app_bucket_acl" {
   count = var.create_bucket_acl ? 1 : 0
-  
+
   bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
   acl    = var.acl
 
-  
-depends_on = [aws_s3_bucket_ownership_controls.app_s3_controls]
+
+  depends_on = [aws_s3_bucket_ownership_controls.app_s3_controls]
 
 }
 
@@ -70,13 +70,13 @@ depends_on = [aws_s3_bucket_ownership_controls.app_s3_controls]
 #################################################################
 
 resource "aws_s3_bucket_public_access_block" "app_public_access" {
-  
+
   count = var.create_public_access_block ? 1 : 0
-  
+
   bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
 
-  block_public_acls       = var.block_public_acls 
-  block_public_policy     = var.block_public_policy 
+  block_public_acls       = var.block_public_acls
+  block_public_policy     = var.block_public_policy
   ignore_public_acls      = var.ignore_public_acls
   restrict_public_buckets = var.restrict_public_buckets
 }
@@ -86,11 +86,11 @@ resource "aws_s3_bucket_public_access_block" "app_public_access" {
 #################################################################
 
 resource "aws_s3_bucket_versioning" "app_bucket_versioning" {
-  count = var.create_bucket_versioning ? 1 : 0
+  count  = var.create_bucket_versioning ? 1 : 0
   bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
   versioning_configuration {
-    status = try(var.versioning_configuration.status ? "Enabled" : "Disabled",null)
-    mfa_delete = try(var.versioning_configuration.mfa_delete ? "Enabled" : "Disabled",null)
+    status     = try(var.versioning_configuration.status ? "Enabled" : "Disabled", null)
+    mfa_delete = try(var.versioning_configuration.mfa_delete ? "Enabled" : "Disabled", null)
   }
 
   mfa = var.mfa
@@ -100,29 +100,29 @@ resource "aws_s3_bucket_versioning" "app_bucket_versioning" {
 #################################################################
 # CREATE SERVER SIDE ENCRYPTION
 #################################################################
-resource "aws_s3_bucket_server_side_encryption_configuration" "example" {
+resource "aws_s3_bucket_server_side_encryption_configuration" "app_serverside_encryption" {
   count = var.create_server_side_encryption ? 1 : 0
-  
-  bucket =  var.provide_bucket_id ? var.bucket_id : local.bucket_name
+
+  bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
 
 
 
   dynamic "rule" {
-      for_each = var.sse_rule 
+    for_each = var.sse_rule
 
-      content {
-          dynamic "apply_server_side_encryption_by_default"{
-              for_each = var.sse_rule
-            
+    content {
+      dynamic "apply_server_side_encryption_by_default" {
+        for_each = var.sse_rule
 
-              content{
 
-                  kms_master_key_id = apply_server_side_encryption_by_default.value.kms
-                  sse_algorithm = apply_server_side_encryption_by_default.value.sse
+        content {
 
-              }
-          }
+          kms_master_key_id = apply_server_side_encryption_by_default.value.kms
+          sse_algorithm     = apply_server_side_encryption_by_default.value.sse
+
+        }
       }
+    }
   }
 
 }
@@ -130,12 +130,12 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "example" {
 #################################################################
 # CREATE BUCKET ACCELERATE CONFIGURATION
 #################################################################
-resource "aws_s3_bucket_accelerate_configuration" "example" {
-  count  = var.create_accelerate_configuration ? 1 : 0
+resource "aws_s3_bucket_accelerate_configuration" "app_s3_accelerate" {
+  count = var.create_accelerate_configuration ? 1 : 0
 
-  bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
+  bucket                = var.provide_bucket_id ? var.bucket_id : local.bucket_name
   expected_bucket_owner = var.expected_bucket_owner
-  status = var.accelerate_configuration_status
+  status                = var.accelerate_configuration_status
 }
 
 #################################################################
@@ -144,14 +144,21 @@ resource "aws_s3_bucket_accelerate_configuration" "example" {
 data "aws_iam_policy_document" "s3_bucket_policy_document" {
   count = var.query_iam_policy ? 1 : 0
   statement {
-    sid = lookup(var.data_policy_statement,"sid",null)
-    actions   = lookup(var.data_policy_statement,"actions",null)
-    resources = lookup(var.data_policy_statement,"resources",null)
-    effect = lookup(var.data_policy_statement,"effect",null)
+    sid       = lookup(var.data_policy_statement, "sid", null)
+    actions   = lookup(var.data_policy_statement, "actions", null)
+    resources = lookup(var.data_policy_statement, "resources", null)
+    effect    = lookup(var.data_policy_statement, "effect", null)
 
     principals {
-      type        = lookup(var.data_policy_statement.principals,"type",null)
-      identifiers = lookup(var.data_policy_statement.principals,"identifiers",null)
+      type        = lookup(var.data_policy_statement.principals, "type", null)
+      identifiers = lookup(var.data_policy_statement.principals, "identifiers", null)
+    }
+    condition {
+      test     = lookup(var.data_policy_statement.condition, "test", null)
+      variable = lookup(var.data_policy_statement.condition, "variable", null)
+      values   = lookup(var.data_policy_statement.condition, "values", null)
+
+
     }
   }
 }
@@ -160,7 +167,7 @@ resource "aws_s3_bucket_policy" "app_bucket_policy" {
   count = var.create_bucket_policy ? 1 : 0
 
   bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
-  policy = var.query_iam_policy ? data.aws_iam_policy_document.s3_bucket_policy_document[0].json : var.policy_document
+  policy = var.query_iam_policy ? data.aws_iam_policy_document.s3_bucket_policy_document[0].json : var.bucket_policy_document
 }
 
 
@@ -179,8 +186,8 @@ resource "aws_s3_bucket_intelligent_tiering_configuration" "app_intelligent_tier
     for_each = var.intelligent_tiering_config_filter
 
     content {
-      prefix = lookup(filter.value.filter,"prefix", null)
-      tags   = lookup(filter.value.filter,"tags", null)
+      prefix = lookup(filter.value.filter, "prefix", null)
+      tags   = lookup(filter.value.filter, "tags", null)
     }
   }
 
@@ -198,37 +205,37 @@ resource "aws_s3_bucket_intelligent_tiering_configuration" "app_intelligent_tier
 
 
 #################################################################
-# CREATE BUCKET INTELLIGENT TIERING CONFIGURATION
+# CREATE BUCKET LIFECYCLE CONFIGURATION
 #################################################################
 
 resource "aws_s3_bucket_lifecycle_configuration" "app_bucket_lifecycle" {
-    count = var.create_lifecycle_configuration ? 1 : 0
+  count = var.create_lifecycle_configuration ? 1 : 0
 
-    bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
-    
+  bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
 
-    rule {
-       
-            id = var.lifecycle_configuration.id
-            status = var.lifecycle_configuration.status
-           
 
-            dynamic "transition" {
-                for_each =  var.lifecycle_rules_transition
+  rule {
 
-                content {
-                    days = transition.value.days
-                    storage_class =  transition.value.storage_class
-                }
-            }
+    id     = var.lifecycle_configuration.id
+    status = var.lifecycle_configuration.status
 
-            expiration {
-                    days = var.lifecycle_configuration.expiration_days
-                    date = var.lifecycle_configuration.expiration_date
-                
-            }
-        
+
+    dynamic "transition" {
+      for_each = var.lifecycle_rules_transition
+
+      content {
+        days          = transition.value.days
+        storage_class = transition.value.storage_class
+      }
     }
+
+    expiration {
+      days = var.lifecycle_configuration.expiration_days
+      date = var.lifecycle_configuration.expiration_date
+
+    }
+
+  }
 
 }
 
@@ -237,9 +244,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "app_bucket_lifecycle" {
 #################################################################
 
 resource "aws_s3_bucket_object_lock_configuration" "app_object_lock" {
-  count = var.create_object_lock_configuration ? 1 : 0 
+  count = var.create_object_lock_configuration ? 1 : 0
 
-  bucket = var.provide_bucket_id ? var.bucket_id : local.bucket_name
+  bucket              = var.provide_bucket_id ? var.bucket_id : local.bucket_name
   object_lock_enabled = "Enabled"
 
 
@@ -272,17 +279,71 @@ resource "aws_s3_bucket_website_configuration" "app_website" {
 
   routing_rule {
     condition {
-      key_prefix_equals =var.routing_condition_prefix 
-      http_error_code_returned_equals =  var.routing_redirect_http_error
+      key_prefix_equals               = var.routing_condition_prefix
+      http_error_code_returned_equals = var.routing_redirect_http_error
     }
     redirect {
       replace_key_prefix_with = var.redirect_replace_key_prefix
-      host_name = var.redirect_hostname
-      protocol = var.redirect_protocol
-      http_redirect_code = var.redirect_http_code
-      replace_key_with = var.redirect_replace_key_with
+      host_name               = var.redirect_hostname
+      protocol                = var.redirect_protocol
+      http_redirect_code      = var.redirect_http_code
+      replace_key_with        = var.redirect_replace_key_with
     }
   }
 }
 
+
+#################################################################
+# CREATE S3 BUCKET REQUEST PAYMENT CONFIGURATION
+#################################################################
+
+resource "aws_s3_bucket_request_payment_configuration" "app_reuqest_payment" {
+  count = var.create_request_payment_configuration ? 1 : 0
+
+  bucket                = var.provide_bucket_id ? var.bucket_id : local.bucket_name
+  expected_bucket_owner = var.expected_bucket_owner
+
+  # Valid values: "BucketOwner" or "Requester"
+  payer = lower(var.request_payer) == "requester" ? "Requester" : "BucketOwner"
+}
+
+#################################################################
+# CREATE IAM POLCIY FOR S3
+#################################################################
+resource "aws_iam_policy" "app_s3access_policy" {
+  count = var.create_iam_policy ? 1 : 0
+  name  = var.s3_iam_policy_name
+
+  policy = local.s3_iam_policy_statement
+
+  tags = var.tags
+}
+
+
+
+#################################################################
+# CREATE IAM ROLE FOR INLINE S3 POLICY
+#################################################################
+
+resource "aws_iam_role" "app_s3_accessrole" {
+  count              = var.create_iam_role ? 1 : 0
+  name               = var.s3_iam_role_name
+  assume_role_policy = local.s3_iam_role_policy
+
+
+  managed_policy_arns = [aws_iam_policy.app_s3access_policy[0].arn]
+
+  tags = var.tags
+}
+
+
+#################################################################
+# CREATE INSTANCE PROFILE
+#################################################################
+
+resource "aws_iam_instance_profile" "artifactory_s3_instanceprofile" {
+  count = var.create_instance_profile ? 1 : 0
+  name  = var.instance_profile_name
+  role  = aws_iam_role.app_s3_accessrole[0].name
+}
 
