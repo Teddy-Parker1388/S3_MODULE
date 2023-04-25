@@ -60,7 +60,7 @@ resource "aws_s3_bucket_acl" "app_bucket_acl" {
   acl    = var.acl
 
 
-  depends_on = [aws_s3_bucket_ownership_controls.app_s3_controls]
+ # depends_on = [aws_s3_bucket_ownership_controls.app_s3_controls]
 
 }
 
